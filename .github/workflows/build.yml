@@ -48,7 +48,9 @@ jobs:
 
       # 7. Build the APK with Gradle
       - name: Build APK
-        run: ./android/gradlew assembleRelease --stacktrace
+        run: |
+          cd android
+          ./gradlew assembleRelease --stacktrace
 
       # 8. Upload the APK as an artifact
       - name: Upload APK
