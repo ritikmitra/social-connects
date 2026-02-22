@@ -1,4 +1,4 @@
-name: Build Signed APK with Expo (Bare Workflow)
+name: Build APK with Expo (Bare Workflow)
 
 on:
   push:
