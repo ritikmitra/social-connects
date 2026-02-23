@@ -27,11 +27,11 @@ jobs:
       # 3. Install dependencies
       - name: Install dependencies
         run: |
-          npm install
+          npm ci
 
       # 4. Run expo prebuild (this generates the android/ folder)
       - name: Run expo prebuild
-        run: npx expo prebuild --clean
+        run: npx expo prebuild --clean --platform android --non-interactive
 
       # 5. Set up JDK 17 (required for building Android)
       - name: Set up JDK 17
@@ -51,7 +51,8 @@ jobs:
       - name: Build APK
         run: |
           cd android
-          ./gradlew assembleRelease --stacktrace
+          chmod +x gradlew
+          ./gradlew assembleRelease --parallel --no-daemon --build-cache
 
       # 8. Upload the APK as an artifact
       - name: Upload APK
@@ -59,3 +60,4 @@ jobs:
         with:
           name: android-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+          overwrite: true
