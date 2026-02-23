@@ -1,15 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React from 'react';
-import { Platform, StyleSheet, Text, View, Pressable } from 'react-native';
+import { Platform, StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 type CustomTabLayoutProps = BottomTabBarProps;
 
-export function CustomTabBar({
+export default function CustomTabBar({
   state,
   descriptors,
   navigation,
 }: CustomTabLayoutProps) {
+
   const focusedOptions = descriptors[state.routes[state.index].key]?.options;
 
   if (focusedOptions?.tabBarStyle === null) {
@@ -93,6 +94,23 @@ export function CustomTabBar({
           console.log('Plus button pressed');
           // You can navigate to a create/add screen here
           // navigation.navigate('create'); // Example route
+          Alert.alert(
+            "Create Item",
+            "Do you want to create something new?",
+            [
+              {
+                text: "No",
+                style: "cancel",
+              },
+              {
+                text: "Yes",
+                onPress: () => {
+                  navigation.navigate('index');
+                },
+              },
+            ],
+            { cancelable: true }
+          );
         }}
       >
         <View style={styles.plusButtonInner}>
