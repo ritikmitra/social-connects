@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
+import { createAppTheme } from '@/theme/createAppTheme';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -16,11 +17,18 @@ export function ThemeProviderCustom({ children }: { children: React.ReactNode })
   const systemScheme = useColorScheme();
   const [mode, setMode] = useState<ThemeMode>('system');
 
+  const variant =
+    mode === 'light'
+      ? 'light'
+      : mode === 'dark'
+      ? 'dark'
+      : systemScheme === 'dark'
+      ? 'dark'
+      : 'light';
+
   const theme = useMemo(() => {
-    if (mode === 'light') return DefaultTheme;
-    if (mode === 'dark') return DarkTheme;
-    return systemScheme === 'dark' ? DarkTheme : DefaultTheme;
-  }, [mode, systemScheme]);
+    return createAppTheme(variant, mode);
+  }, [variant, mode]);
 
   return (
     <ThemeContext.Provider value={{ mode, setMode, theme }}>

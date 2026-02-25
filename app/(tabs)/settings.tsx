@@ -1,10 +1,13 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
+import { Color } from 'expo-router';
 
 export default function SettingsScreen() {
   const { mode, setMode } = useAppTheme();
   const { colors } = useTheme();
+  console.log(Color);
+  
 
   const Option = ({ label, value }: any) => (
     <Pressable
