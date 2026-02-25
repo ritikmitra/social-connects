@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React from 'react';
-import { Platform, StyleSheet, Text, View, Pressable, Alert } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Platform, StyleSheet, Text, View, Pressable, Alert, Animated } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { useAppTheme } from '@/context/ThemeContext';
 
 type CustomTabLayoutProps = BottomTabBarProps;
 
@@ -10,6 +11,32 @@ export default function CustomTabBar({
   descriptors,
   navigation,
 }: CustomTabLayoutProps) {
+
+  const { accentColor } = useAppTheme();
+
+  const animatedColor = useRef(new Animated.Value(0)).current;
+  const previousColor = useRef(accentColor);
+
+  useEffect(() => {
+    animatedColor.setValue(0);
+
+    Animated.timing(animatedColor, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+
+  }, [accentColor, animatedColor]);
+
+  const interpolatedColor = animatedColor.interpolate({
+    inputRange: [0, 1],
+    outputRange: [previousColor.current, accentColor],
+  });
+
+  // After render update previousColor
+  useEffect(() => {
+    previousColor.current = accentColor;
+  }, [accentColor]);
 
   const focusedOptions = descriptors[state.routes[state.index].key]?.options;
 
@@ -66,14 +93,14 @@ export default function CustomTabBar({
                 {options?.tabBarIcon &&
                   options.tabBarIcon({
                     focused: isFocused,
-                    color: isFocused ? '#007AFF' : '#999999',
+                    color: isFocused ? accentColor : '#999999',
                     size: 24,
                   })}
                 {typeof label === 'string' && (
                   <Text
                     style={[
                       styles.tabLabel,
-                      { color: isFocused ? '#007AFF' : '#999999' },
+                      { color: isFocused ? accentColor : '#999999' },
                     ]}
                     numberOfLines={1}
                   >
@@ -113,9 +140,9 @@ export default function CustomTabBar({
           );
         }}
       >
-        <View style={styles.plusButtonInner}>
+        <Animated.View style={[styles.plusButtonInner, { backgroundColor: interpolatedColor }]}>
           <Ionicons name="add" size={28} color="white" />
-        </View>
+        </Animated.View>
       </Pressable>
     </View>
   );
@@ -128,7 +155,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     height: 70,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',
     alignItems: 'center',
