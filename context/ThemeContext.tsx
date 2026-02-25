@@ -1,36 +1,75 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
-import { DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
-import { useColorScheme } from 'react-native';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Appearance } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DefaultTheme, DarkTheme, Theme } from '@react-navigation/native';
 
-type ThemeMode = 'system' | 'light' | 'dark';
+type ThemeMode = 'light' | 'dark' | 'system';
 
-type ThemeContextType = {
+interface ThemeContextType {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
+  accentColor: string;
+  setAccentColor: (color: string) => void;
   theme: Theme;
-};
+}
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({} as ThemeContextType);
 
-export function ThemeProviderCustom({ children }: { children: React.ReactNode }) {
-  const systemScheme = useColorScheme();
-  const [mode, setMode] = useState<ThemeMode>('system');
+export const ThemeProviderCustom = ({ children }: any) => {
+  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [accentColor, setAccentColorState] = useState('#007AFF');
 
-  const theme = useMemo(() => {
-    if (mode === 'light') return DefaultTheme;
-    if (mode === 'dark') return DarkTheme;
-    return systemScheme === 'dark' ? DarkTheme : DefaultTheme;
-  }, [mode, systemScheme]);
+  const systemScheme = Appearance.getColorScheme();
+
+  const resolvedMode =
+    mode === 'system' ? systemScheme : mode;
+
+  const baseTheme =
+    resolvedMode === 'dark' ? DarkTheme : DefaultTheme;
+
+  const theme: Theme = {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      primary: accentColor,
+    },
+  };
+
+  // Load saved values
+  useEffect(() => {
+    const load = async () => {
+      const savedMode = await AsyncStorage.getItem('themeMode');
+      const savedColor = await AsyncStorage.getItem('accentColor');
+
+      if (savedMode) setModeState(savedMode as ThemeMode);
+      if (savedColor) setAccentColorState(savedColor);
+    };
+    load();
+  }, []);
+
+  const setMode = async (newMode: ThemeMode) => {
+    setModeState(newMode);
+    await AsyncStorage.setItem('themeMode', newMode);
+  };
+
+  const setAccentColor = async (color: string) => {
+    setAccentColorState(color);
+    await AsyncStorage.setItem('accentColor', color);
+  };
 
   return (
-    <ThemeContext.Provider value={{ mode, setMode, theme }}>
+    <ThemeContext.Provider
+      value={{
+        mode,
+        setMode,
+        accentColor,
+        setAccentColor,
+        theme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
-}
+};
 
-export function useAppTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error('useAppTheme must be used inside ThemeProviderCustom');
-  return context;
-}
+export const useAppTheme = () => useContext(ThemeContext);

@@ -5,7 +5,7 @@ import { useTheme } from '@react-navigation/native';
 export default function HomeScreen() {
   const { mode } = useAppTheme();
   const { colors } = useTheme();
-
+  
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.title, { color: colors.text }]}>
