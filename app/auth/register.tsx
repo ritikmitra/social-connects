@@ -66,13 +66,12 @@ export default function RegisterScreen() {
             <TextInput
                 placeholder="Confirm Password"
                 placeholderTextColor="#94A3B8"
-                secureTextEntry
                 autoCapitalize="none"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 style={[styles.input, { borderColor: accentColor, color: colors.text }]}
             />
-            {password && confirmPassword && password !== confirmPassword && (
+            {!(password && confirmPassword) || password === confirmPassword ? null : (
                 <Text style={{ color: 'red', marginBottom: 8 }}>
                     Passwords do not match
                 </Text>

@@ -11,7 +11,7 @@ export default function CustomTabBar({
   state,
   descriptors,
   navigation,
-}: CustomTabLayoutProps) {
+}: Readonly<CustomTabLayoutProps>) {
   const { colors } = useTheme();
 
   const { accentColor } = useAppTheme();
@@ -51,12 +51,15 @@ export default function CustomTabBar({
       <View style={[styles.tabBar, { backgroundColor: colors.background }]}>
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key] ?? {};
-          const label =
-            options?.tabBarLabel !== undefined
-              ? options.tabBarLabel
-              : options?.title !== undefined
-                ? options.title
-                : route.name;
+          let label;
+
+          if (options?.tabBarLabel) {
+            label = options.tabBarLabel;
+          } else if (options?.title) {
+            label = options.title;
+          } else {
+            label = route.name;
+          }
 
           const isFocused = state.index === index;
 
@@ -92,12 +95,11 @@ export default function CustomTabBar({
               android_ripple={{ radius: 100, borderless: true, color: 'rgba(255, 255, 255, 0.1)' }}
             >
               <View style={styles.tabContent}>
-                {options?.tabBarIcon &&
-                  options.tabBarIcon({
-                    focused: isFocused,
-                    color: isFocused ? accentColor : '#999999',
-                    size: 24,
-                  })}
+                {options?.tabBarIcon?.({
+                  focused: isFocused,
+                  color: isFocused ? accentColor : '#999999',
+                  size: 24,
+                })}
                 {typeof label === 'string' && (
                   <Text
                     style={[
