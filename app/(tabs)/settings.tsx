@@ -12,6 +12,38 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+interface RowProps {
+  title: string;
+  value: string;
+  onPress: () => void;
+  colors: ReturnType<typeof useTheme>['colors'];
+}
+
+const Row = ({ title, value, onPress, colors }: RowProps) => (
+  <Pressable
+    style={[
+      styles.row,
+      { backgroundColor: colors.card },
+    ]}
+    onPress={onPress}
+  >
+    <Text style={[styles.rowTitle, { color: colors.text }]}>
+      {title}
+    </Text>
+
+    <View style={styles.rowRight}>
+      <Text style={{ color: colors.primary, marginRight: 6 }}>
+        {value}
+      </Text>
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={colors.border}
+      />
+    </View>
+  </Pressable>
+);
+
 export default function SettingsScreen() {
   const { mode, setMode, accentColor, setAccentColor } = useAppTheme();
   const { colors } = useTheme();
@@ -32,7 +64,7 @@ export default function SettingsScreen() {
     } else {
       slideAnim.setValue(300);
     }
-  }, [visible,slideAnim]);
+  }, [visible, slideAnim]);
 
   const openSheet = (type: 'theme' | 'color') => {
     setSheetType(type);
@@ -55,30 +87,7 @@ export default function SettingsScreen() {
     '#FF9500',
   ];
 
-  const Row = ({ title, value, onPress }: any) => (
-    <Pressable
-      style={[
-        styles.row,
-        { backgroundColor: colors.card },
-      ]}
-      onPress={onPress}
-    >
-      <Text style={[styles.rowTitle, { color: colors.text }]}>
-        {title}
-      </Text>
 
-      <View style={styles.rowRight}>
-        <Text style={{ color: colors.primary, marginRight: 6 }}>
-          {value}
-        </Text>
-        <Ionicons
-          name="chevron-forward"
-          size={18}
-          color={colors.border}
-        />
-      </View>
-    </Pressable>
-  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -91,12 +100,14 @@ export default function SettingsScreen() {
         title="Theme"
         value={mode}
         onPress={() => openSheet('theme')}
+        colors={colors}
       />
 
       <Row
         title="Accent Color"
         value=""
         onPress={() => openSheet('color')}
+        colors={colors}
       />
 
       {/* Bottom Sheet */}

@@ -10,8 +10,12 @@ function RootNavigator() {
   return (
     <ThemeProvider value={theme}>
       <SafeScreen>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack  screenOptions={{ headerShown: false }} >
+          <Stack.Screen name="splash" />
+          <Stack.Screen name="auth/email" />
+          <Stack.Screen name="auth/login" />
+          <Stack.Screen name="auth/register" />
+          <Stack.Screen name="(tabs)"/>
         </Stack>
         <StatusBar style={theme.dark ? 'light' : 'dark'} />
       </SafeScreen>
