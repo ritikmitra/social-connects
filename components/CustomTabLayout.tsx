@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Platform, StyleSheet, Text, View, Pressable, Alert, Animated } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useTheme } from '@react-navigation/native';
 
 type CustomTabLayoutProps = BottomTabBarProps;
 
@@ -11,6 +12,7 @@ export default function CustomTabBar({
   descriptors,
   navigation,
 }: CustomTabLayoutProps) {
+  const { colors } = useTheme();
 
   const { accentColor } = useAppTheme();
 
@@ -46,7 +48,7 @@ export default function CustomTabBar({
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { backgroundColor: colors.background }]}>
         {state.routes.map((route: any, index: number) => {
           const { options } = descriptors[route.key] ?? {};
           const label =
@@ -155,9 +157,8 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     height: 70,
-    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#e0e0e000',
     alignItems: 'center',
     paddingBottom: Platform.OS === 'ios' ? 20 : 8,
     shadowColor: '#000',

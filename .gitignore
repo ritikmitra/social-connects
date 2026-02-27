@@ -45,3 +45,5 @@ app-example
 .scannerwork
 
 command.sh
+
+.env
