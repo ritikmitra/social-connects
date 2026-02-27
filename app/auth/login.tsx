@@ -4,18 +4,22 @@ import {
     TextInput,
     StyleSheet,
     Pressable,
-    KeyboardAvoidingView,
-    Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@react-navigation/native';
 import { useAppTheme } from '@/context/ThemeContext';
+import { useAuthStore } from "@/store/auth.store";
+import { loginApi, getMeApi } from "@/services/auth.service";
+import { AxiosError } from 'axios';
+
 
 export default function LoginScreen() {
     const { colors } = useTheme();
     const { accentColor } = useAppTheme();
-    const { email } = useLocalSearchParams();
+    let { email } = useLocalSearchParams();
+    email = typeof email === 'string' ? email : '';
     const router = useRouter();
 
     const [mode, setMode] = useState<'password' | 'otp'>('password');
@@ -27,7 +31,8 @@ export default function LoginScreen() {
     const value = mode === 'password' ? password : otp;
     const isDisabled = value.length === 0;
 
-    // Start countdown when OTP is sent
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout>;
         if (resendTimer > 0) {
@@ -56,16 +61,37 @@ export default function LoginScreen() {
             handleSendOtp();
         }
     };
+    const setUser = useAuthStore((s) => s.setUser);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (isDisabled) return;
-        // TODO: validate password or OTP
-        router.replace('/(tabs)');
+        setLoading(true);
+
+        try {
+            await loginApi(email, password);
+            const me = await getMeApi();
+            setUser(me);
+            router.replace('/(tabs)');
+        } catch (error) {
+            if (error instanceof AxiosError) {
+                // Check if the response exists and has data (which usually has the error message)
+                if (error.response) {
+                    console.log('Status code:', error.response.status);
+                    console.log('Error message:', error.response.data || error.response.statusText);
+                    // Optionally, you can show the error in the UI
+                } else {
+                    console.log('No response received from the server');
+                }
+            } else {
+                console.log('An unknown error occurred:', error);
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        <View
             style={[styles.container, { backgroundColor: colors.background }]}
         >
             <View style={styles.header}>
@@ -96,6 +122,7 @@ export default function LoginScreen() {
                     placeholderTextColor="#94A3B8"
                     secureTextEntry={mode === 'password'}
                     keyboardType={mode === 'otp' ? 'number-pad' : 'default'}
+                    maxLength={mode === 'otp' ? 6 : undefined}
                     autoCapitalize="none"
                     value={value}
                     onChangeText={
@@ -150,10 +177,20 @@ export default function LoginScreen() {
                     styles.button,
                     { backgroundColor: isDisabled ? '#CBD5E1' : accentColor },
                 ]}
+                android_ripple={{
+                    color: 'rgba(0,0,0,0.1)',
+                    borderless: false,
+                    foreground: true,
+                }}
             >
-                <Text style={styles.buttonText}>Login</Text>
+                {loading ?
+                    <ActivityIndicator size='small' color="white" animating={loading} />
+                    :
+                    <Text style={styles.buttonText}>Login</Text>
+                }
+
             </Pressable>
-        </KeyboardAvoidingView>
+        </View>
     );
 }
 
@@ -166,6 +203,6 @@ const styles = StyleSheet.create({
     label: { fontSize: 14, marginBottom: 8, fontWeight: '600' },
     input: { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12 },
     switchText: { fontSize: 14, fontWeight: '600', marginTop: 4 },
-    button: { padding: 18, borderRadius: 16, alignItems: 'center' },
+    button: { padding: 18, borderRadius: 16, alignItems: 'center', overflow: 'hidden' },
     buttonText: { color: 'white', fontWeight: '700', fontSize: 16 },
 });

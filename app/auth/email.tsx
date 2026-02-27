@@ -13,7 +13,7 @@ export default function EmailScreen() {
 
 
     const handleContinue = async () => {
-        const exists = email.includes('test'); // Replace with API
+        const exists = email.includes('46'); // Replace with API
         if (exists) {
             router.push({ pathname: '/auth/login', params: { email } });
         } else {
