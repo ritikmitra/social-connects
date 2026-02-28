@@ -1,5 +1,13 @@
 import axios from "@/api/axios";
 
+
+export const checkEmailExists = async (email: string) => {
+    const { status } = await axios.post(`/auth/identify`, {
+        email
+    });
+    return status;
+}
+
 export const loginApi = async (email: string, password: string) => {
     const { data } = await axios.post("/auth/login", {
         username: email,
