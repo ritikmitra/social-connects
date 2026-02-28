@@ -4,7 +4,7 @@ import { getAuthState } from "@/store/";
 const axiosInstance = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   timeout: 15000,
-  withCredentials: true, // 🔥 VERY IMPORTANT
+  withCredentials: true,
 });
 
 // Global Response Interceptor
