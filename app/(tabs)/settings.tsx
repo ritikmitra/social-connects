@@ -11,6 +11,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { logoutApi } from "@/services/auth.service";
+import { useAuthStore } from "@/store/auth.store";
+import { useRouter } from 'expo-router';
 
 interface RowProps {
   title: string;
@@ -47,11 +50,15 @@ const Row = ({ title, value, onPress, colors }: RowProps) => (
 export default function SettingsScreen() {
   const { mode, setMode, accentColor, setAccentColor } = useAppTheme();
   const { colors } = useTheme();
+      const router = useRouter();
+  
 
   const [visible, setVisible] = useState(false);
   const [sheetType, setSheetType] = useState<'theme' | 'color' | null>(null);
 
   const slideAnim = useRef(new Animated.Value(300)).current;
+
+  const logout = useAuthStore((s) => s.logout);
 
   useEffect(() => {
     if (visible) {
@@ -87,7 +94,11 @@ export default function SettingsScreen() {
     '#FF9500',
   ];
 
-
+  const handleLogout = async () => {
+    await logoutApi();
+    await logout();
+    router.replace('/auth/email');
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -109,6 +120,15 @@ export default function SettingsScreen() {
         onPress={() => openSheet('color')}
         colors={colors}
       />
+
+      <Pressable
+        style={[styles.row, { backgroundColor: colors.card }]}
+        onPress={handleLogout}
+      >
+        <Text style={{ color: colors.primary }}>
+          Log Out
+        </Text>
+      </Pressable>
 
       {/* Bottom Sheet */}
       <Modal transparent visible={visible} animationType="none">

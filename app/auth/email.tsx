@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
+import { checkEmailExists } from "@/services/auth.service";
 
 export default function EmailScreen() {
     const { colors } = useTheme();
@@ -11,14 +12,23 @@ export default function EmailScreen() {
     const [email, setEmail] = useState('');
     const { accentColor } = useAppTheme();
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const handleContinue = async () => {
-        const exists = email.includes('test'); // Replace with API
-        if (exists) {
-            router.push({ pathname: '/auth/login', params: { email } });
-        } else {
-            router.push({ pathname: '/auth/register', params: { email } });
+        if (!email) return;
+        if (!emailRegex.test(email)) return;
+        try {
+            const status = await checkEmailExists(email);
+            if (status === 200) {
+                router.push({ pathname: '/auth/login', params: { email } });
+            } else {
+                router.push({ pathname: '/auth/register', params: { email } });
+            }
+        } catch (error) {
+            console.log(error);
         }
+
+
     };
 
     return (
@@ -45,6 +55,7 @@ export default function EmailScreen() {
                     foreground: true,
                 }}
                 style={{ borderRadius: 14, overflow: 'hidden' }}
+                disabled={email.length === 0}
             >
                 <LinearGradient
                     colors={[accentColor, '#7C3AED']}
