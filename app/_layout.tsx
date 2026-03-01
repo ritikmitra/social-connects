@@ -10,7 +10,8 @@ function RootNavigator() {
   return (
     <ThemeProvider value={theme}>
       <SafeScreen>
-        <Stack  screenOptions={{ headerShown: false }} >
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
           <Stack.Screen name="splash" />
           <Stack.Screen name="auth/email" />
           <Stack.Screen name="auth/login" />
