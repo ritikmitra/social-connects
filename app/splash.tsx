@@ -3,11 +3,17 @@ import { useTheme } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import LottieView from "lottie-react-native";
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { storage } from '@/services/storage.service';
 
 export default function SplashScreen() {
     const router = useRouter();
     const { accentColor } = useAppTheme();
     const { colors } = useTheme();
+
+    const handleGetStarted = async () => {
+        await storage.setHasSeenSplash();
+        router.replace('/auth/email');
+    };
 
     return (
         <View style={styles.container}>
@@ -33,7 +39,7 @@ export default function SplashScreen() {
 
                 <Pressable
                     style={[styles.button, { backgroundColor: accentColor }]}
-                    onPress={() => router.replace('/auth/email')}
+                    onPress={handleGetStarted}
                     android_ripple={{
                         color: 'rgba(0,0,0,0.1)',
                         borderless: false,
