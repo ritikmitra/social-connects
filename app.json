@@ -20,7 +20,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.social.connects"
+      "package": "com.social.connects",
+      "googleServicesFile" : "./google-services.json"
     },
     "web": {
       "output": "static",
