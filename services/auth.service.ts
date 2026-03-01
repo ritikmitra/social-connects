@@ -20,6 +20,14 @@ export const registerApi = async (email: string, password: string, firstName: st
     return data;
 }
 
+export const verifyEmailApi = async (email: string, otp: string) => {
+    const { data } = await axios.post("/user/verify", {
+        email,
+        otp
+    });
+    return data;
+}
+
 export const loginApi = async (email: string, password: string) => {
     const { data } = await axios.post("/auth/login", {
         username: email,
