@@ -1,21 +1,28 @@
 import axios from "@/api/axios";
 
 
-export const checkEmailExists = async (email: string) => {
+export const checkEmailExistsApi = async (email: string) => {
     const { status } = await axios.post(`/auth/identify`, {
         email
     });
     return status;
 }
 
-export const registerApi = async (email: string, password: string, firstName: string, lastName: string, is_terms_accepted: boolean, is_usage_policy_accepted: boolean) => {
+export const registerApi = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    is_terms_accepted: boolean,
+    is_usage_policy_accepted: boolean
+) => {
     const { data } = await axios.post("/user/sign-up", {
         email,
         password,
-        firstName,
-        lastName,
+        first_name: firstName,
+        last_name: lastName,
         is_terms_accepted,
-        is_usage_policy_accepted
+        is_usage_policy_accepted,
     });
     return data;
 }

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
-import { checkEmailExists } from "@/services/auth.service";
+import { checkEmailExistsApi } from "@/services/auth.service";
 
 export default function EmailScreen() {
     const { colors } = useTheme();
@@ -18,7 +18,7 @@ export default function EmailScreen() {
         if (!email) return;
         if (!emailRegex.test(email)) return;
         try {
-            const status = await checkEmailExists(email);
+            const status = await checkEmailExistsApi(email);
             if (status === 200) {
                 router.push({ pathname: '/auth/login', params: { email } });
             } else {

@@ -1,26 +1,102 @@
 import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '@react-navigation/native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
+import { registerApi } from '@/services/auth.service';
+import { Checkbox } from "expo-checkbox";
+import * as Linking from 'expo-linking';
+import { AxiosError } from 'axios';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+} from "react-native-reanimated";
 
 export default function RegisterScreen() {
+    let { email } = useLocalSearchParams();
+    email = typeof email === 'string' ? email : '';
+
+
+
+    const openTerms = async () => {
+        await Linking.openURL("https://policies.google.com/terms?hl=en");
+    };
+
+    const openUsagePolicy = async () => {
+        await Linking.openURL("https://policies.google.com/privacy?hl=en");
+    };
+
     const { accentColor } = useAppTheme();
     const { colors } = useTheme();
     const router = useRouter();
 
-    const [fullName, setFullName] = useState('');
-    const [email, setEmail] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+    const [isUsagePolicyAccepted, setIsUsagePolicyAccepted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(-10);
+
+    useEffect(() => {
+        if (error) {
+            opacity.value = withTiming(1, { duration: 300 });
+            translateY.value = withTiming(0, { duration: 300 });
+        } else {
+            opacity.value = withTiming(0, { duration: 200 });
+            translateY.value = withTiming(-10, { duration: 200 });
+        }
+    }, [error, opacity, translateY]);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        return {
+            opacity: opacity.value,
+            transform: [{ translateY: translateY.value }],
+        };
+    });
+
 
     const isDisabled =
-        !fullName || !email || !password || !confirmPassword || password !== confirmPassword;
+        !firstName ||
+        !lastName ||
+        !email ||
+        !password ||
+        !confirmPassword ||
+        password !== confirmPassword ||
+        !isTermsAccepted ||
+        !isUsagePolicyAccepted;
 
-    const handleCreateAccount = () => {
-        if (isDisabled) return;
-        // TODO: Add registration logic here
-        router.replace('/(tabs)');
+    const handleCreateAccount = async () => {
+        if (isDisabled || isSubmitting) return;
+        try {
+            setIsSubmitting(true);
+            await registerApi(
+                email,
+                password,
+                firstName,
+                lastName,
+                isTermsAccepted,
+                isUsagePolicyAccepted
+            );
+            router.push({ pathname: '/auth/verify-email', params: { email } });
+        } catch (error) {
+            if (error instanceof AxiosError) {
+                if (error.response) {
+                    setError(error.response.data?.detail || 'Registration failed');
+                } else {
+                    setError('Registration failed');
+                }
+            } else {
+                setError('Registration failed');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -34,20 +110,23 @@ export default function RegisterScreen() {
                 Basic Info
             </Text>
             <TextInput
-                placeholder="Full Name"
+                placeholder="First Name"
                 placeholderTextColor="#94A3B8"
-                value={fullName}
-                onChangeText={setFullName}
+                value={firstName}
+                onChangeText={setFirstName}
                 style={[styles.input, { borderColor: accentColor, color: colors.text }]}
             />
             <TextInput
-                placeholder="Email"
+                placeholder="Last Name"
                 placeholderTextColor="#94A3B8"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
+                value={lastName}
+                onChangeText={setLastName}
                 style={[styles.input, { borderColor: accentColor, color: colors.text }]}
+            />
+            <TextInput
+                editable={false}
+                value={email}
+                style={[styles.input, { borderColor: accentColor, color: '#94A3B8' }]}
             />
 
             {/* PASSWORD */}
@@ -77,11 +156,67 @@ export default function RegisterScreen() {
                 </Text>
             )}
 
+            {/* TERMS & USAGE POLICY */}
+            <Pressable
+                style={styles.checkboxRow}
+                onPress={() => setIsTermsAccepted((prev) => !prev)}
+            >
+                <View style={styles.checkbox}>
+                    <Checkbox
+                        value={isTermsAccepted}
+                        onValueChange={setIsTermsAccepted}
+                        color={accentColor}
+                    />
+                </View>
+                <Text style={[styles.checkboxLabel, { color: colors.text }]}>
+                    I accept the{" "}
+                    <Text style={{ color: accentColor, textDecorationLine: "underline" }} onPress={openTerms}>
+                        Terms & Conditions
+                    </Text>
+                </Text>
+            </Pressable>
+
+            <Pressable
+                style={styles.checkboxRow}
+                onPress={() => setIsUsagePolicyAccepted((prev) => !prev)}
+            >
+                <View style={styles.checkbox}>
+                    <Checkbox
+                        value={isUsagePolicyAccepted}
+                        onValueChange={setIsUsagePolicyAccepted}
+                        color={accentColor}
+                    />
+                </View>
+                <Text style={[styles.checkboxLabel, { color: colors.text }]}>
+                    I accept the{" "}
+                    <Text style={{ color: accentColor, textDecorationLine: "underline" }} onPress={openUsagePolicy}>
+                        Usage Policy
+                    </Text>
+                </Text>
+            </Pressable>
+
+            {error && (
+                <Text style={{ color: 'red', marginBottom: 8 }}>
+                    <Animated.Text
+                        style={[
+                            {
+                                color: "red",
+                                marginBottom: 25,
+                                textAlign: "center",
+                            },
+                            animatedStyle,
+                        ]}
+                    >
+                        {error}
+                    </Animated.Text>
+                </Text>
+            )}
+
             {/* CREATE ACCOUNT BUTTON */}
             <Pressable
                 style={[
                     styles.button,
-                    { backgroundColor: isDisabled ? '#CBD5E1' : accentColor },
+                    { backgroundColor: accentColor },
                 ]}
                 onPress={handleCreateAccount}
                 disabled={isDisabled}
@@ -92,7 +227,7 @@ export default function RegisterScreen() {
                 }}
             >
                 <Text style={{ color: 'white', fontWeight: 'bold' }}>
-                    Create Account
+                    {isSubmitting ? 'Creating...' : 'Create Account'}
                 </Text>
             </Pressable>
         </View>
@@ -126,5 +261,21 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         alignItems: 'center',
         overflow: 'hidden',
+    },
+    checkboxRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 6,
+    },
+    checkbox: {
+        width: 20,
+        height: 20,
+        borderRadius: 4,
+        borderWidth: 1,
+        marginRight: 8,
+    },
+    checkboxLabel: {
+        flex: 1,
+        fontSize: 14,
     },
 });
