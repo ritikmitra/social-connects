@@ -51,7 +51,7 @@ export default function SettingsScreen() {
   const { mode, setMode, accentColor, setAccentColor } = useAppTheme();
   const { colors } = useTheme();
       const router = useRouter();
-  
+
 
   const [visible, setVisible] = useState(false);
   const [sheetType, setSheetType] = useState<'theme' | 'color' | null>(null);
@@ -59,6 +59,7 @@ export default function SettingsScreen() {
   const slideAnim = useRef(new Animated.Value(300)).current;
 
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     if (visible) {
@@ -103,6 +104,17 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
+      {user && (
+        <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
+          <Text style={[styles.profileName, { color: colors.text }]}>
+            {user.first_name} {user.last_name}
+          </Text>
+          <Text style={{ color: colors.text }}>
+            {user.email}
+          </Text>
+        </View>
+      )}
+
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         Appearance
       </Text>
@@ -122,8 +134,13 @@ export default function SettingsScreen() {
       />
 
       <Pressable
-        style={[styles.row, { backgroundColor: colors.card }]}
+        style={[styles.row, { backgroundColor: colors.card ,overflow: 'hidden'}]}
         onPress={handleLogout}
+        android_ripple={{
+          color: 'rgba(0,0,0,0.1)',
+          borderless: false,
+          foreground: true,
+      }}
       >
         <Text style={{ color: colors.primary }}>
           Log Out
@@ -208,6 +225,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  profileCard: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 20,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   sectionTitle: {
     fontSize: 20,

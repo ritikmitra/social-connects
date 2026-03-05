@@ -86,6 +86,16 @@ export default function VerifyEmailScreen() {
         }
     };
 
+    let resendText;
+
+    if (isResending) {
+        resendText = "Sending...";
+    } else if (resendCooldown > 0) {
+        resendText = `Resend in ${formatCooldown(resendCooldown)}`;
+    } else {
+        resendText = "Resend code";
+    }
+
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Text style={[styles.title, { color: colors.text }]}>
@@ -134,11 +144,7 @@ export default function VerifyEmailScreen() {
                             (!email || isResending || resendCooldown > 0) ? styles.resendLinkDisabled : null,
                         ]}
                     >
-                        {isResending
-                            ? 'Sending...'
-                            : resendCooldown > 0
-                                ? `Resend in ${formatCooldown(resendCooldown)}`
-                                : 'Resend code'}
+                        {resendText}
                     </Text>
                 </Pressable>
             </View>

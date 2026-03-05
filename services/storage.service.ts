@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { User } from '@/types/auth';
 const KEYS = {
   HAS_SEEN_SPLASH: '@connects:hasSeenSplash',
   USER: '@connects:user',
@@ -19,7 +19,7 @@ export const storage = {
     await AsyncStorage.setItem(KEYS.HAS_SEEN_SPLASH, 'true');
   },
 
-  getUser: async (): Promise<unknown | null> => {
+  getUser: async (): Promise<User | null> => {
     try {
       const value = await AsyncStorage.getItem(KEYS.USER);
       return value ? JSON.parse(value) : null;
@@ -28,7 +28,7 @@ export const storage = {
     }
   },
 
-  setUser: async (user: unknown): Promise<void> => {
+  setUser: async (user: User): Promise<void> => {
     await AsyncStorage.setItem(KEYS.USER, JSON.stringify(user));
   },
 
