@@ -142,7 +142,7 @@ export default function SettingsScreen() {
           foreground: true,
       }}
       >
-        <Text style={{ color: colors.primary }}>
+        <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '500' }}>
           Log Out
         </Text>
       </Pressable>
