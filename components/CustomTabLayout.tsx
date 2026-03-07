@@ -1,6 +1,15 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useEffect, useRef } from 'react';
-import { Platform, StyleSheet, Text, View, Pressable, Alert, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Animated,
+  Modal,
+  TextInput,
+} from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
@@ -35,6 +44,11 @@ export default function CustomTabBar({
     outputRange: [previousColor.current, accentColor],
   });
 
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [friendId, setFriendId] = useState('');
+  const [initialMessage, setInitialMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
   // After render update previousColor
   useEffect(() => {
     previousColor.current = accentColor;
@@ -45,6 +59,40 @@ export default function CustomTabBar({
   if (focusedOptions?.tabBarStyle === null) {
     return null;
   }
+
+  const handleOpenModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    if (isSending) return;
+    setIsModalVisible(false);
+  };
+
+  const handleStartChat = async () => {
+    const trimmedId = friendId.trim();
+    const trimmedMessage = initialMessage.trim();
+
+    if (!trimmedId || isSending) {
+      return;
+    }
+
+    try {
+      setIsSending(true);
+
+      // TODO: Hook this into your actual "start conversation" / messaging flow.
+      navigation.navigate('index', {
+        friendId: trimmedId,
+        initialMessage: trimmedMessage,
+      });
+
+      setFriendId('');
+      setInitialMessage('');
+      setIsModalVisible(false);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -120,34 +168,99 @@ export default function CustomTabBar({
       {/* Floating Plus Button */}
       <Pressable
         style={styles.plusButton}
-        onPress={() => {
-          // Handle plus button press - navigate to new screen or open modal
-          console.log('Plus button pressed');
-          // You can navigate to a create/add screen here
-          // navigation.navigate('create'); // Example route
-          Alert.alert(
-            "Create Item",
-            "Do you want to create something new?",
-            [
-              {
-                text: "No",
-                style: "cancel",
-              },
-              {
-                text: "Yes",
-                onPress: () => {
-                  navigation.navigate('index');
-                },
-              },
-            ],
-            { cancelable: true }
-          );
-        }}
+        onPress={handleOpenModal}
       >
         <Animated.View style={[styles.plusButtonInner, { backgroundColor: interpolatedColor }]}>
           <Ionicons name="add" size={28} color="white" />
         </Animated.View>
       </Pressable>
+
+      {/* New Chat Modal */}
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={styles.modalContainer}
+          >
+            <Pressable style={styles.modalOverlayPressable} onPress={handleCloseModal} />
+
+            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Start a new chat
+              </Text>
+
+              <Text style={[styles.modalSubtitle, { color: colors.text }]}>
+                Enter your friend&apos;s Connect ID and send your first message.
+              </Text>
+
+              <TextInput
+                value={friendId}
+                onChangeText={setFriendId}
+                placeholder="Friend&apos;s Connect ID"
+                placeholderTextColor='#94A3B8'
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[
+                  styles.input,
+                  {
+                    borderColor: accentColor,
+                    color: colors.text,
+                  },
+                ]}
+              />
+
+              <TextInput
+                value={initialMessage}
+                onChangeText={setInitialMessage}
+                placeholder="Say hi 👋 (optional)"
+                placeholderTextColor='#94A3B8'
+                multiline
+                style={[
+                  styles.input,
+                  styles.messageInput,
+                  {
+                    borderColor: accentColor,
+                    color: colors.text,
+                  },
+                ]}
+              />
+
+              <View style={styles.modalButtonsRow}>
+                <Pressable
+                  style={[styles.modalButton, styles.modalSecondaryButton]}
+                  onPress={handleCloseModal}
+                  disabled={isSending}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalSecondaryButtonText]}>
+                    Cancel
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.modalButton,
+                    styles.modalPrimaryButton,
+                    {
+                      opacity: !friendId.trim() || isSending ? 0.6 : 1,
+                      backgroundColor: accentColor,
+                    },
+                  ]}
+                  onPress={handleStartChat}
+                  disabled={!friendId.trim() || isSending}
+                >
+                  <Text style={[styles.modalButtonText, styles.modalPrimaryButtonText]}>
+                    {isSending ? 'Sending…' : 'Send'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -207,5 +320,73 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalOverlayPressable: {
+    flex: 1,
+  },
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    opacity: 0.7,
+    marginBottom: 18,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  messageInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+    marginTop: 8,
+  },
+  modalButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  modalSecondaryButton: {
+    backgroundColor: 'transparent',
+  },
+  modalSecondaryButtonText: {
+    color: '#999',
+  },
+  modalPrimaryButton: {},
+  modalPrimaryButtonText: {
+    color: '#fff',
   },
 });
