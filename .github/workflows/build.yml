@@ -33,7 +33,7 @@ jobs:
       # 4. Decode Google Services JSON
       - name: Decode Google Services JSON
         run: |
-          echo ${{ secrets.GOOGLE_SERVICES_JSON }} | base64 --decode > ./google-services.json
+          printf "%s" "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > ./google-services.json
 
       # 5. Run expo prebuild (this generates the android/ folder)
       - name: Run expo prebuild
