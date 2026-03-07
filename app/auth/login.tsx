@@ -74,8 +74,6 @@ export default function LoginScreen() {
 
     const handleSendOtp = async () => {
         if (!otpSent) {
-            console.log('Send OTP to:', email);
-
             try {
                 await requestOtp(email);
                 setOtpSent(true);

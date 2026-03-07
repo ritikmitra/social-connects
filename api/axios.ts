@@ -14,7 +14,7 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
     //   await getAuthState().logout();
     }
-    return Promise.reject(error);
+    throw error;
   }
 );
 

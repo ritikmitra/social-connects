@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { storage } from "@/services/storage.service";
-
+import { User } from "@/types/auth";
 interface AuthState {
-  user: any | null;
+  user: User | null;
   isAuthenticated: boolean;
-  setUser: (user: any) => void;
+  setUser: (user: User) => void;
   logout: () => Promise<void>;
-  hydrateUser: (user: any) => void;
+  hydrateUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({

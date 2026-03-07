@@ -12,7 +12,7 @@ export default function EmailScreen() {
     const [email, setEmail] = useState('');
     const { accentColor } = useAppTheme();
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
     const handleContinue = async () => {
         if (!email) return;
