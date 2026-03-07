@@ -6,6 +6,7 @@ import {
   Modal,
   Animated,
   Easing,
+  ToastAndroid
 } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -14,7 +15,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { logoutApi } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from 'expo-router';
-
+import Feather from '@expo/vector-icons/Feather';
+import { copyFriendId, shareFriendId } from '@/utils/share';
 interface RowProps {
   title: string;
   value: string;
@@ -50,16 +52,37 @@ const Row = ({ title, value, onPress, colors }: RowProps) => (
 export default function SettingsScreen() {
   const { mode, setMode, accentColor, setAccentColor } = useAppTheme();
   const { colors } = useTheme();
-      const router = useRouter();
+  const router = useRouter();
 
 
   const [visible, setVisible] = useState(false);
   const [sheetType, setSheetType] = useState<'theme' | 'color' | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const slideAnim = useRef(new Animated.Value(300)).current;
 
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+
+  const handleCopyId = async () => {
+    if (!user) return;
+
+    await copyFriendId(user.id);
+    ToastCopiedId();
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  const ToastCopiedId = () => {
+    ToastAndroid.showWithGravity(
+      'You\'ve copied your connect ID',
+      ToastAndroid.SHORT,
+      ToastAndroid.BOTTOM,
+    );
+  }
 
   useEffect(() => {
     if (visible) {
@@ -105,13 +128,59 @@ export default function SettingsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
 
       {user && (
-        <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.profileName, { color: colors.text }]}>
-            {user.first_name} {user.last_name}
-          </Text>
-          <Text style={{ color: colors.text }}>
-            {user.email}
-          </Text>
+        <View style={[styles.inviteCard, { backgroundColor: colors.card }]}>
+
+          {/* USER HEADER */}
+          <View style={styles.userHeader}>
+
+            {/* Avatar */}
+            <View style={[styles.avatar, { backgroundColor: colors.primary + "30" }]}>
+              <Text style={{ color: colors.primary, fontWeight: "700" }}>
+                {user.first_name?.[0]}
+                {user.last_name?.[0]}
+              </Text>
+            </View>
+
+            {/* USER INFO */}
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: colors.text }]}>
+                {user.first_name} {user.last_name}
+              </Text>
+
+              <Text style={[styles.email, { color: colors.text }]}>
+                {user.email}
+              </Text>
+            </View>
+
+          </View>
+
+          {/* ACTION BUTTONS */}
+          <View style={styles.actionRow}>
+
+            <Pressable
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              onPress={() => shareFriendId(user.id)}
+            >
+              <Feather name="share" size={16} color="#fff" />
+              <Text style={styles.actionText}>Share</Text>
+            </Pressable>
+
+            <Pressable
+              style={[styles.actionButtonOutline, { borderColor: colors.primary }]}
+              onPress={handleCopyId}
+            >
+              <Feather
+                name={copied ? "check" : "copy"}
+                size={16}
+                color={colors.primary}
+              />
+              <Text style={[styles.actionTextOutline, { color: colors.primary }]}>
+                {copied ? "Copied" : "Copy ID"}
+              </Text>
+            </Pressable>
+
+          </View>
+
         </View>
       )}
 
@@ -134,13 +203,13 @@ export default function SettingsScreen() {
       />
 
       <Pressable
-        style={[styles.row, { backgroundColor: colors.card ,overflow: 'hidden'}]}
+        style={[styles.row, { backgroundColor: colors.card, overflow: 'hidden' }]}
         onPress={handleLogout}
         android_ripple={{
           color: 'rgba(0,0,0,0.1)',
           borderless: false,
           foreground: true,
-      }}
+        }}
       >
         <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '500' }}>
           Log Out
@@ -224,18 +293,28 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
   },
   profileCard: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 10,
+    elevation: 2,
   },
-  profileName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
+  profileEmail: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+
+  shareButton: {
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: 'hidden',
   },
   sectionTitle: {
     fontSize: 20,
@@ -279,5 +358,82 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+  },
+  inviteCard: {
+    padding: 18,
+    borderRadius: 16,
+    marginTop: 0,
+    elevation: 2,
+  },
+
+  userHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+
+  profileInfo: {
+    flex: 1,
+  },
+
+  profileName: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  email: {
+    fontSize: 13,
+    opacity: 0.8,
+    marginTop: 2,
+  },
+
+  userId: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginTop: 4,
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  actionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+
+  actionButtonOutline: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    gap: 6,
+  },
+
+  actionText: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+
+  actionTextOutline: {
+    fontWeight: "600",
   },
 });
