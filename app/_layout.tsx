@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ThemeProviderCustom, useAppTheme } from '@/context/ThemeContext';
 import SafeScreen from '@/components/SafeScreen';
-
+import { SocketProvider } from "@/context/socket.context";
 function RootNavigator() {
   const { theme } = useAppTheme();
 
@@ -26,8 +26,10 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <ThemeProviderCustom>
-      <RootNavigator />
-    </ThemeProviderCustom>
+    <SocketProvider>
+      <ThemeProviderCustom>
+        <RootNavigator />
+      </ThemeProviderCustom>
+    </SocketProvider>
   );
 }

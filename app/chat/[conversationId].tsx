@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { getConversationMessagesApi } from '@/services/message.service';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useAuthStore } from '@/store/auth.store';
+import { useSocket } from "@/context/socket.context";
 
 export default function ChatScreen() {
     const { conversationId } = useLocalSearchParams();
@@ -11,7 +12,7 @@ export default function ChatScreen() {
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const flatListRef = useRef<FlatList>(null);
-
+    const { socket } = useSocket();
     const { user } = useAuthStore();
     const currentUserId = user?.id;
 
@@ -23,8 +24,42 @@ export default function ChatScreen() {
         fetchMessages();
     }, [conversationId]);
 
+    // Join conversation room & listen for real-time messages
+    useEffect(() => {
+        if (!socket) return;
+        socket.emit("join_conversation", { conversation_id: conversationId });
+
+        const handleMessage = (msg: any) => {
+            if (msg.conversation_id === conversationId) {
+                setMessages((prev) => [...prev, {
+                    id: msg.message_id,
+                    content: msg.content,
+                    sender_id: msg.from,
+                    created_at: msg.created_at,
+                }]);
+                flatListRef.current?.scrollToEnd({ animated: true });
+            }
+        };
+
+        socket.on("receive_message", handleMessage);
+
+        return () => {
+            socket.off("receive_message", handleMessage);
+        };
+    }, [socket, conversationId]);
+
+    const receiverId = messages.find((message) => message.sender_id !== currentUserId)?.sender_id;
+
     const sendMessage = () => {
+        
         if (!input.trim()) return;
+        
+        if (!socket) return;
+
+        socket.emit("send_message", {
+            receiver_id: receiverId,
+            content: input,
+        });
 
         const newMsg = {
             id: Date.now().toString(),

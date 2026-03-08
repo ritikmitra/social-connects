@@ -5,10 +5,14 @@ import { useEffect, useState } from 'react';
 import { useTheme } from '@react-navigation/native';
 import { formatTime } from '@/utils/dateTime';
 import { router } from 'expo-router';
+import { useSocket } from "@/context/socket.context";
+
+
+
 export default function HomeScreen() {
   const { accentColor } = useAppTheme();
   const { colors } = useTheme();
-
+  const { socket } = useSocket();
   const [conversations, setConversations] = useState<any[]>([]);
 
   useEffect(() => {
@@ -19,6 +23,29 @@ export default function HomeScreen() {
     fetchConversations();
   }, []);
 
+  // Listen for incoming messages globally
+  useEffect(() => {
+    if (!socket) return;
+    const handleMessage = (msg: any) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.conversation_id === msg.conversation_id
+            ? {
+                ...c,
+                last_message: { content: msg.content, created_at: msg.created_at },
+                unread_count: c.unread_count + 1,
+              }
+            : c
+        )
+      );
+    };
+
+    socket.on("receive_message", handleMessage);
+    return () => {
+      socket.off("receive_message", handleMessage);
+    };
+  }, [socket]);
+
   const getInitials = (first?: string, last?: string) => {
     const f = first ? first[0].toUpperCase() : "";
     const l = last ? last[0].toUpperCase() : "";
@@ -26,7 +53,10 @@ export default function HomeScreen() {
   };
 
   const handleConversationClick = (conversationId: string) => {
-    router.push(`/chat/${conversationId}`);
+    router.push({
+      pathname: "/chat/[conversationId]",
+      params: { conversationId },
+    });
   };
 
   const renderItem = ({ item }: any) => {
