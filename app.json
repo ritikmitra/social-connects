@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.social.connects",
+      "package": "com.finac.connects",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
