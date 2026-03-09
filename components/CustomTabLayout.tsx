@@ -9,10 +9,12 @@ import {
   Animated,
   Modal,
   TextInput,
+  ToastAndroid,
 } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
+import { sendFirstMessageApi } from '@/services/message.service';
 
 type CustomTabLayoutProps = BottomTabBarProps;
 
@@ -81,6 +83,7 @@ export default function CustomTabBar({
       setIsSending(true);
 
       // TODO: Hook this into your actual "start conversation" / messaging flow.
+      await sendFirstMessageApi(trimmedId, trimmedMessage);
       navigation.navigate('index', {
         friendId: trimmedId,
         initialMessage: trimmedMessage,
@@ -89,6 +92,9 @@ export default function CustomTabBar({
       setFriendId('');
       setInitialMessage('');
       setIsModalVisible(false);
+    } catch (error) {
+      console.error(error);
+      ToastAndroid.show('Failed to send message', ToastAndroid.SHORT);
     } finally {
       setIsSending(false);
     }
