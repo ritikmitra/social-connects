@@ -1,19 +1,21 @@
-import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable , AppState} from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
-import { getConversationsApi } from '@/services/message.service';
-import { useEffect, useState } from 'react';
+import { getConversationsApi, registerForNotificationsApi } from '@/services/message.service';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@react-navigation/native';
 import { formatTime } from '@/utils/dateTime';
 import { router } from 'expo-router';
 import { useSocket } from "@/context/socket.context";
-
-
+import { useDeviceInfo } from '@/hooks/useDeviceInfo';
+import { getFCMToken } from '@/utils/pushNotification';
 
 export default function HomeScreen() {
   const { accentColor } = useAppTheme();
   const { colors } = useTheme();
   const { socket } = useSocket();
   const [conversations, setConversations] = useState<any[]>([]);
+  const appState = useRef(AppState.currentState);
+
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -22,6 +24,40 @@ export default function HomeScreen() {
     };
     fetchConversations();
   }, []);
+  const deviceInfo = useDeviceInfo();
+
+
+  useEffect(() => {
+    // Initial registration
+
+    const registerDevice = async () => {
+      const fcmToken = await getFCMToken();
+      if (fcmToken) {
+        await registerForNotificationsApi(
+          deviceInfo.device_id,
+          deviceInfo.device_type,
+          deviceInfo.device_model,
+          deviceInfo.os_version,
+          deviceInfo.app_version,
+          fcmToken
+        );
+      }
+    };
+    registerDevice();
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        // App came back to foreground, re-register
+        registerDevice();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => subscription.remove();
+  }, [deviceInfo]);
 
   // Listen for incoming messages globally
   useEffect(() => {
@@ -31,10 +67,10 @@ export default function HomeScreen() {
         prev.map((c) =>
           c.conversation_id === msg.conversation_id
             ? {
-                ...c,
-                last_message: { content: msg.content, created_at: msg.created_at },
-                unread_count: c.unread_count + 1,
-              }
+              ...c,
+              last_message: { content: msg.content, created_at: msg.created_at },
+              unread_count: c.unread_count + 1,
+            }
             : c
         )
       );

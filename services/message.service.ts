@@ -17,3 +17,15 @@ export const sendFirstMessageApi = async (revieverId: string, message: string) =
     });
     return data;
 }
+
+export const registerForNotificationsApi = async (device_id: string, device_type: string, device_model: string, os_version: string, app_version: string, fcm_token: string) => {
+    const { data } = await axiosInstance.post(`/user/register-device`, {
+        device_id,
+        device_type,
+        device_model,
+        os_version,
+        app_version,
+        fcm_token
+    });
+    return data;
+}

@@ -6,7 +6,8 @@ import {
   Modal,
   Animated,
   Easing,
-  ToastAndroid
+  ToastAndroid,
+  AppState
 } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -17,12 +18,33 @@ import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from 'expo-router';
 import Feather from '@expo/vector-icons/Feather';
 import { copyFriendId, shareFriendId } from '@/utils/share';
+import { requestNotificationPermission } from '@/logic/notificationPermission';
+import * as Notifications from 'expo-notifications';
+
+
 interface RowProps {
   title: string;
   value: string;
   onPress: () => void;
   colors: ReturnType<typeof useTheme>['colors'];
 }
+
+const handleNotificationPress = async () => {
+  const result = await requestNotificationPermission();
+
+  if (result.granted) {
+    return;
+  }
+
+  if (result.openSettings) {
+    ToastAndroid.show(
+      "Enable notifications from settings",
+      ToastAndroid.SHORT
+    );
+
+    result.openSettings();
+  }
+};
 
 const Row = ({ title, value, onPress, colors }: RowProps) => (
   <Pressable
@@ -54,6 +76,9 @@ export default function SettingsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
 
+  const [notificationStatus, setNotificationStatus] = useState("Disabled");
+  const appState = useRef(AppState.currentState);
+
 
   const [visible, setVisible] = useState(false);
   const [sheetType, setSheetType] = useState<'theme' | 'color' | null>(null);
@@ -83,6 +108,30 @@ export default function SettingsScreen() {
       ToastAndroid.BOTTOM,
     );
   }
+
+  const checkNotificationPermission = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    console.log("Permission status:", status);
+    setNotificationStatus(status === "granted" ? "Enabled" : "Disabled");
+  };
+
+  useEffect(() => {
+    // Initial check
+    checkNotificationPermission();
+
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        // App has come to foreground, re-check permissions
+        checkNotificationPermission();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -199,6 +248,13 @@ export default function SettingsScreen() {
         title="Accent Color"
         value=""
         onPress={() => openSheet('color')}
+        colors={colors}
+      />
+
+      <Row
+        title="Notifications"
+        value={notificationStatus}
+        onPress={handleNotificationPress}
         colors={colors}
       />
 
