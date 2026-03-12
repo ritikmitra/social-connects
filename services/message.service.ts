@@ -13,7 +13,7 @@ export const getConversationMessagesApi = async (conversationId: string) => {
 export const sendFirstMessageApi = async (revieverId: string, message: string) => {
     const { data } = await axiosInstance.post(`/chat/send-first-message`, {
         revieverId,
-        message
+        content: message
     });
     return data;
 }
