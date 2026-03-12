@@ -15,6 +15,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
 import { sendFirstMessageApi } from '@/services/message.service';
+import { AxiosError } from 'axios';
 
 type CustomTabLayoutProps = BottomTabBarProps;
 
@@ -93,8 +94,13 @@ export default function CustomTabBar({
       setInitialMessage('');
       setIsModalVisible(false);
     } catch (error) {
-      console.error(error);
-      ToastAndroid.show('Failed to send message', ToastAndroid.SHORT);
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 400) {
+          ToastAndroid.show('Invalid Connect ID', ToastAndroid.SHORT);
+        } else {
+          ToastAndroid.show('Failed to send message', ToastAndroid.SHORT);
+        }
+      }
     } finally {
       setIsSending(false);
     }

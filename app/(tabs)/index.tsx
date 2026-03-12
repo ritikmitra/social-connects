@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, Pressable , AppState} from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, AppState } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { getConversationsApi, registerForNotificationsApi } from '@/services/message.service';
 import { useEffect, useRef, useState } from 'react';
@@ -31,6 +31,7 @@ export default function HomeScreen() {
     // Initial registration
 
     const registerDevice = async () => {
+      if (deviceInfo.is_simulator) return;
       const fcmToken = await getFCMToken();
       if (fcmToken) {
         await registerForNotificationsApi(
