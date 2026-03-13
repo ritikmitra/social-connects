@@ -82,7 +82,7 @@ export default function CustomTabBar({
 
     try {
       setIsSending(true);
-
+      
       // TODO: Hook this into your actual "start conversation" / messaging flow.
       await sendFirstMessageApi(trimmedId, trimmedMessage);
       navigation.navigate('index', {
