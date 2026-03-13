@@ -10,9 +10,9 @@ export const getConversationMessagesApi = async (conversationId: string) => {
     return data;
 }
 
-export const sendFirstMessageApi = async (revieverId: string, message: string) => {
+export const sendFirstMessageApi = async (receiverId: string, message: string) => {
     const { data } = await axiosInstance.post(`/chat/send-first-message`, {
-        revieverId,
+        receiverId,
         content: message
     });
     return data;
