@@ -1,10 +1,11 @@
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { Text, TextInput, StyleSheet, Pressable } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
 import { checkEmailExistsApi } from "@/services/auth.service";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 
 export default function EmailScreen() {
     const { colors } = useTheme();
@@ -32,7 +33,7 @@ export default function EmailScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <KeyboardAvoidingView behavior="padding" style={[styles.container, { backgroundColor: colors.background }]}>
             <Text style={[styles.title, { color: colors.text }]}>
                 Welcome 👋
             </Text>
@@ -64,7 +65,7 @@ export default function EmailScreen() {
                     <Text style={styles.buttonText}>Continue</Text>
                 </LinearGradient>
             </Pressable>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, FlatList, Pressable, AppState } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { getConversationsApi, registerForNotificationsApi } from '@/services/message.service';
-import { useEffect, useRef, useState } from 'react';
-import { useTheme } from '@react-navigation/native';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTheme, useFocusEffect } from '@react-navigation/native';
+
 import { formatTime } from '@/utils/dateTime';
 import { router } from 'expo-router';
 import { useSocket } from "@/context/socket.context";
@@ -17,13 +18,23 @@ export default function HomeScreen() {
   const appState = useRef(AppState.currentState);
 
 
-  useEffect(() => {
-    const fetchConversations = async () => {
-      const data = await getConversationsApi();
-      setConversations(data);
-    };
-    fetchConversations();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const fetchConversations = async () => {
+        const data = await getConversationsApi();
+        if (isActive) {
+          setConversations(data);
+        }
+      };
+      fetchConversations();
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+
+
   const deviceInfo = useDeviceInfo();
 
 
@@ -89,10 +100,14 @@ export default function HomeScreen() {
     return `${f}${l}` || "?";
   };
 
-  const handleConversationClick = (conversationId: string) => {
+  const handleConversationClick = (conversationId: string, user: any) => {
     router.push({
       pathname: "/chat/[conversationId]",
-      params: { conversationId },
+      params: {
+        conversationId,
+        firstName: user?.first_name ?? "",
+        lastName: user?.last_name ?? "",
+      },
     });
   };
 
@@ -100,7 +115,10 @@ export default function HomeScreen() {
     const { user, last_message, unread_count } = item;
 
     return (
-      <Pressable style={styles.row} onPress={() => handleConversationClick(item.conversation_id)}>
+      <Pressable
+        style={styles.row}
+        onPress={() => handleConversationClick(item.conversation_id, user)}
+      >
         {/* Avatar */}
         <View style={[styles.avatar, { backgroundColor: accentColor }]}>
           <Text style={styles.avatarText}>

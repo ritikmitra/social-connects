@@ -1,6 +1,9 @@
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import * as Linking from "expo-linking";
+import * as IntentLauncher from "expo-intent-launcher";
+import { Platform } from "react-native";
+import * as Application from "expo-application";
 
 export type NotificationPermissionResult =
   | { granted: true; token: string }
@@ -37,11 +40,28 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
     return { granted: false, canAskAgain: true };
   }
 
+  const openSettings = async () => {
+    const packageName = Application.applicationId;
+    
+    if (Platform.OS === "android") {
+      await IntentLauncher.startActivityAsync(
+        IntentLauncher.ActivityAction.APP_NOTIFICATION_SETTINGS, {
+        extra: {
+          "android.provider.extra.APP_PACKAGE": packageName,
+        }
+      }
+      );
+    } else {
+      await Linking.openSettings();
+    }
+  };
+
+
   // Permanently denied
   return {
     granted: false,
     canAskAgain: false,
-    openSettings: () => Linking.openSettings(),
+    openSettings: openSettings,
   };
 }
 
