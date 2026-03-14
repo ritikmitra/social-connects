@@ -14,6 +14,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useAuthStore } from "@/store/auth.store";
 import { loginApi, getMeApi, requestOtp, verifyOtp } from "@/services/auth.service";
 import { AxiosError } from 'axios';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 
 
 export default function LoginScreen() {
@@ -149,9 +150,7 @@ export default function LoginScreen() {
     };
 
     return (
-        <View
-            style={[styles.container, { backgroundColor: colors.background }]}
-        >
+        <KeyboardAvoidingView behavior="padding" style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
                 <Text style={[styles.title, { color: colors.text }]}>
                     Welcome Back
@@ -262,7 +261,7 @@ export default function LoginScreen() {
                 }
 
             </Pressable>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

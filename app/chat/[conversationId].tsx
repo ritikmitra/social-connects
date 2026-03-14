@@ -32,7 +32,6 @@ import {
     ComposerProps,
 } from "react-native-gifted-chat";
 import { Ionicons } from "@expo/vector-icons";
-import { useHeaderHeight } from "@react-navigation/elements";
 import * as Haptics from "expo-haptics";
 
 import { getConversationMessagesApi } from "@/services/message.service";
@@ -40,6 +39,7 @@ import { useAppTheme } from "@/context/ThemeContext";
 import { useAuthStore } from "@/store/auth.store";
 import { useSocket } from "@/context/socket.context";
 import { useChatStore } from "@/store/chat.store";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -55,10 +55,11 @@ export default function ChatScreen() {
             lastName?: string;
         }>();
 
+    const insets = useSafeAreaInsets();
+
     const { accentColor, theme } = useAppTheme();
     const { user } = useAuthStore();
     const { socket } = useSocket();
-    const headerHeight = useHeaderHeight();
 
     const { messages, setMessages, addMessage, hasLoaded, markLoaded } =
         useChatStore();
@@ -548,9 +549,7 @@ export default function ChatScreen() {
     // ─── JSX ───────────────────────────────────────────────────────────────────
 
     return (
-        <View
-            style={[styles.container, { backgroundColor: theme.colors.background }]}
-        >
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <View
                 style={[
                     styles.header,
@@ -601,19 +600,11 @@ export default function ChatScreen() {
                 onSend={onSend}
                 user={{ _id: currentUserId }}
                 colorScheme={isDark ? "dark" : "light"}
-                // Input
                 isTyping={isTyping}
                 renderAvatar={null}
                 isUserAvatarVisible={false}
                 isAvatarVisibleForEveryMessage={false}
                 isUsernameVisible={false}
-                
-                // Keyboard
-                keyboardAvoidingViewProps={{
-                    behavior: Platform.OS === "ios" ? "padding" : "height",
-                    keyboardVerticalOffset: headerHeight,
-                }}
-
                 renderBubble={renderBubble}
                 renderSend={renderSend}
                 renderInputToolbar={renderInputToolbar}
@@ -627,6 +618,10 @@ export default function ChatScreen() {
                 renderChatEmpty={renderChatEmpty}
                 renderLoading={renderLoading}
                 // Container
+                keyboardAvoidingViewProps={{
+                    behavior: Platform.OS === "ios" ? "padding" : "height",
+                    keyboardVerticalOffset: insets.top * 3,
+                }}
                 messagesContainerStyle={[
                     styles.messagesContainer,
                     { backgroundColor: theme.colors.background },

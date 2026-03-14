@@ -12,6 +12,8 @@ import Animated, {
     useAnimatedStyle,
     withTiming,
 } from "react-native-reanimated";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller"
+
 
 export default function RegisterScreen() {
     let { email } = useLocalSearchParams();
@@ -100,7 +102,7 @@ export default function RegisterScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <KeyboardAvoidingView behavior="padding" style={[styles.container, { backgroundColor: colors.background }]}>
             <Text style={[styles.title, { color: colors.text }]}>
                 Create Account
             </Text>
@@ -230,7 +232,7 @@ export default function RegisterScreen() {
                     {isSubmitting ? 'Creating...' : 'Create Account'}
                 </Text>
             </Pressable>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

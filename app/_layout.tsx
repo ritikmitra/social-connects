@@ -7,7 +7,7 @@ import SafeScreen from '@/components/SafeScreen';
 import { SocketProvider } from "@/context/socket.context";
 import { useEffect } from "react";
 import { Platform } from "react-native";
-
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -52,9 +52,11 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <SocketProvider>
-      <ThemeProviderCustom>
-        <RootNavigator />
-      </ThemeProviderCustom>
+      <KeyboardProvider>
+        <ThemeProviderCustom>
+          <RootNavigator />
+        </ThemeProviderCustom>
+      </KeyboardProvider>
     </SocketProvider>
   );
 }
