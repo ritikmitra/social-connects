@@ -24,7 +24,11 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({
       messages: {
         ...state.messages,
-        [conversationId]: msgs,
+        [conversationId]: [...msgs].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() -
+            new Date(a.created_at).getTime()
+        ),
       },
     })),
 
@@ -32,10 +36,7 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({
       messages: {
         ...state.messages,
-        [conversationId]: [
-          ...(state.messages[conversationId] || []),
-          msg,
-        ],
+        [conversationId]: [msg, ...(state.messages[conversationId] || [])],
       },
     })),
 
