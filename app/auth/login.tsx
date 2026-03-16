@@ -182,6 +182,7 @@ export default function LoginScreen() {
                     maxLength={mode === 'otp' ? 6 : undefined}
                     autoCapitalize="none"
                     value={value}
+                    editable={!loading}
                     onChangeText={
                         mode === 'password' ? setPassword : setOtp
                     }
@@ -243,7 +244,7 @@ export default function LoginScreen() {
 
             <Pressable
                 onPress={handleLogin}
-                disabled={isDisabled}
+                disabled={isDisabled || loading}
                 style={[
                     styles.button,
                     { backgroundColor: accentColor },
