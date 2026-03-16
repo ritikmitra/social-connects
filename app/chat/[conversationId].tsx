@@ -41,6 +41,7 @@ import { useSocket } from "@/context/socket.context";
 import { useChatStore } from "@/store/chat.store";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const BUBBLE_RADIUS = 20;
@@ -85,8 +86,6 @@ export default function ChatScreen() {
     useEffect(() => { addMessageRef.current = addMessage; }, [addMessage]);
     useEffect(() => { markLoadedRef.current = markLoaded; }, [markLoaded]);
 
-    // ── Memoised raw message list — prevents dependent useMemos from firing on
-    //    every render when the outer `messages` object reference changes.
     const rawMessages = useMemo(
         () => messages[conversationId] ?? [],
         [messages, conversationId]
@@ -180,7 +179,7 @@ export default function ChatScreen() {
             const text = msgs[0]?.text?.trim();
             if (!text || !socket) return;
 
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
 
             addMessageRef.current(conversationId, {
                 id: msgs[0]._id.toString(),
@@ -267,9 +266,6 @@ export default function ChatScreen() {
         [accentColor, isDark, theme.colors.text]
     );
 
-    // ─── Render: MessageText (URL / phone links) ───────────────────────────────
-    // parsePatterns is not in gifted-chat's TS types in older versions; we cast
-    // via extraProps to avoid a compile error while preserving the feature.
 
     const renderMessageText = useCallback(
         (props: MessageTextProps<IMessage>) => {
@@ -689,7 +685,6 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        transform: [{ scaleY: -1 }],
         paddingHorizontal: 32,
     },
     emptyIcon: {

@@ -1,58 +1,62 @@
-import { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { getMeApi } from '@/services/auth.service';
-import { useAuthStore } from '@/store/auth.store';
-import { storage } from '@/services/storage.service';
+// app/index.tsx
 
-// Keep native splash visible while we resolve initial route
+import { useEffect, useState } from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { Redirect } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { getMeApi } from "@/services/auth.service";
+import { useAuthStore } from "@/store/auth.store";
+import { storage } from "@/services/storage.service";
+
 SplashScreen.preventAutoHideAsync();
 
-export default function IndexScreen() {
-  const router = useRouter();
+export default function Index() {
   const hydrateUser = useAuthStore((s) => s.hydrateUser);
+  const [route, setRoute] = useState<string | null>(null);
 
   useEffect(() => {
-    const resolveInitialRoute = async () => {
+    const init = async () => {
       try {
-        // 1. Check if user is logged in (session valid via cookies)
+        // 1️⃣ Validate session using cookies
         const me = await getMeApi();
+
         if (me) {
           hydrateUser(me);
-          router.replace('/(tabs)');
+          setRoute("/(tabs)");
           return;
         }
-      } catch {
-        // Not logged in or session expired
-      }
+      } catch {}
 
-      // 2. Check if user has seen splash before
+      // 2️⃣ Fallback logic
       const hasSeenSplash = await storage.getHasSeenSplash();
 
       if (hasSeenSplash) {
-        router.replace('/auth/email');
+        setRoute("/auth/email");
       } else {
-        router.replace('/splash');
+        setRoute("/splash");
       }
     };
 
-    resolveInitialRoute().finally(() => {
+    init().finally(() => {
       SplashScreen.hideAsync();
     });
-  }, [router, hydrateUser]);
+  }, [hydrateUser]);
 
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" />
-    </View>
-  );
+  if (!route) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return <Redirect href={route as any} />;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
