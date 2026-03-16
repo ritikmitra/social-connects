@@ -107,6 +107,7 @@ export default function HomeScreen() {
         conversationId,
         firstName: user?.first_name ?? "",
         lastName: user?.last_name ?? "",
+        receiverId: user.id,
       },
     });
   };

@@ -49,11 +49,12 @@ const BUBBLE_RADIUS = 20;
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
-    const { conversationId, firstName, lastName } =
+    const { conversationId, firstName, lastName, receiverId } =
         useLocalSearchParams<{
             conversationId: string;
             firstName?: string;
             lastName?: string;
+            receiverId: string;
         }>();
 
     const insets = useSafeAreaInsets();
@@ -89,12 +90,6 @@ export default function ChatScreen() {
     const rawMessages = useMemo(
         () => messages[conversationId] ?? [],
         [messages, conversationId]
-    );
-
-    // ── Derived: receiver id
-    const receiverId = useMemo(
-        () => rawMessages.find((m) => m.sender_id !== currentUserId)?.sender_id,
-        [rawMessages, currentUserId]
     );
 
     // ─── Transform messages → GiftedChat IMessage ─────────────────────────────
