@@ -60,10 +60,21 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --parallel --no-daemon --build-cache
 
-      # 9. Upload the APK as an artifact
+      # 9. Sign APK
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      
+      # 10. Upload the signed APK as an artifact
       - name: Upload APK
         uses: actions/upload-artifact@v6
         with:
-          name: android-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          name: android-apk-signed
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
           overwrite: true
