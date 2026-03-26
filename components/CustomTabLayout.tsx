@@ -16,6 +16,7 @@ import { useAppTheme } from '@/context/ThemeContext';
 import { useTheme } from '@react-navigation/native';
 import { sendFirstMessageApi } from '@/services/message.service';
 import { AxiosError } from 'axios';
+import { KeyboardAvoidingView } from "react-native-keyboard-controller"
 
 type CustomTabLayoutProps = BottomTabBarProps;
 
@@ -200,7 +201,7 @@ export default function CustomTabBar({
           >
             <Pressable style={styles.modalOverlayPressable} onPress={handleCloseModal} />
 
-            <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <KeyboardAvoidingView behavior="padding" style={[styles.modalContent, { backgroundColor: colors.card }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
                 Start a new chat
               </Text>
@@ -269,7 +270,7 @@ export default function CustomTabBar({
                   </Text>
                 </Pressable>
               </View>
-            </View>
+            </KeyboardAvoidingView>
           </View>
         </View>
       </Modal>
