@@ -22,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'npm'
 
       # 3. Install dependencies
@@ -49,9 +49,9 @@ jobs:
 
       # 7. Set up Android SDK
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
-            cmdline-tools-version: 12266719
+            cmdline-tools-version: 14742923
 
       # 8. Build the APK with Gradle
       - name: Build APK
