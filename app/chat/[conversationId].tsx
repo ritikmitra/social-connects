@@ -583,6 +583,14 @@ export default function ChatScreen() {
                         Chat
                     </Text>
                 </View>
+                {/* call button */}
+                <Pressable
+                    onPress={() => router.back()}
+                    style={styles.headerBackButton}
+                    hitSlop={10}
+                >
+                    <Ionicons name="call-sharp" size={22} color={theme.colors.text} />
+                </Pressable>
             </View>
 
             <GiftedChat
