@@ -41,7 +41,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "@config-plugins/react-native-webrtc"
     ],
     "experiments": {
       "typedRoutes": true,
