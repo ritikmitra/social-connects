@@ -47,3 +47,9 @@ app-example
 command.sh
 
 .env
+
+# sensitive files
+google-services.json
+local.properties
+rnsec-*.html
+rnsec-*.json

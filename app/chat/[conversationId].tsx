@@ -92,6 +92,28 @@ export default function ChatScreen() {
         [messages, conversationId]
     );
 
+    const startOutgoingCall = useCallback((isVideo = true) => {
+        const callId = `call_${Date.now()}_${currentUserId}_${receiverId}`;
+        if (!socket) return;
+        socket.emit("initiate_call", {
+            call_id: callId,
+            target_user_id: receiverId,
+            is_video: isVideo,
+            caller_name: user?.first_name || "Someone",
+        });
+
+        // Navigate to CallScreen
+        router.push({
+            pathname: "/call",
+            params: {
+                callId,
+                targetUserId: receiverId,
+                isVideo: isVideo.toString(),
+                isCaller: "true"
+            }
+        });
+    }, [socket, receiverId, currentUserId, user?.first_name]);
+
     // ─── Transform messages → GiftedChat IMessage ─────────────────────────────
 
     const formattedMessages: IMessage[] = useMemo(
@@ -585,7 +607,7 @@ export default function ChatScreen() {
                 </View>
                 {/* call button */}
                 <Pressable
-                    onPress={() => router.back()}
+                    onPress={() => startOutgoingCall(true)}
                     style={styles.headerBackButton}
                     hitSlop={10}
                 >
