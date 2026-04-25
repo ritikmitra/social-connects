@@ -59,7 +59,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease --parallel --no-daemon --build-cache
+          ./gradlew assembleRelease --parallel --no-daemon --build-cache --stacktrace
 
       # 9. Sign APK
       - name: Sign APK
