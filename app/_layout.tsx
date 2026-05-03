@@ -11,6 +11,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import * as Haptics from "expo-haptics";
 import IncomingCallSheet from "@/components/IncomingCallSheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useAudioPlayer } from "expo-audio";
 
 
 Notifications.setNotificationHandler({
@@ -36,6 +37,7 @@ function IncomingCallListener() {
   const { socket } = useSocket();
   const [incoming, setIncoming] = useState<IncomingCallPayload | null>(null);
   const ringTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ringtone = useAudioPlayer(require("../assets/sounds/ringtone.mp3"));
 
   const callerName = incoming?.caller_name ?? "Someone";
   const callerId = incoming?.caller_id ?? incoming?.from ?? incoming?.user_id ?? "";
@@ -62,11 +64,19 @@ function IncomingCallListener() {
       if (ringTimerRef.current) clearInterval(ringTimerRef.current);
       ringTimerRef.current = null;
       try { Vibration.cancel(); } catch {}
+      try { ringtone.pause(); } catch {}
+      try { (ringtone as any).loop = false; } catch {}
       return;
     }
 
     // Vibrate in a loop. (Android: pattern loops; iOS: best-effort fallback)
     try { Vibration.vibrate([0, 900, 700], true); } catch {}
+
+    // Play ringtone loop (foreground only)
+    try {
+      (ringtone as any).loop = true;
+      ringtone.play();
+    } catch {}
 
     // Add a light repeated haptic pulse (helps on devices where vibration loop is limited).
     ringTimerRef.current = setInterval(() => {
@@ -77,8 +87,10 @@ function IncomingCallListener() {
       if (ringTimerRef.current) clearInterval(ringTimerRef.current);
       ringTimerRef.current = null;
       try { Vibration.cancel(); } catch {}
+      try { ringtone.pause(); } catch {}
+      try { (ringtone as any).loop = false; } catch {}
     };
-  }, [incoming]);
+  }, [incoming, ringtone]);
 
   if (!incoming) return null;
 
