@@ -1,5 +1,5 @@
 import axiosInstance from "@/api/axios";
-import axios from "axios";
+import { refreshTokenRequest } from "@/api/auth";
 
 export const checkEmailExistsApi = async (email: string) => {
     const { status } = await axiosInstance.post(`/auth/identify`, {
@@ -51,11 +51,7 @@ export const loginApi = async (email: string, password: string) => {
 };
 
 export const refreshTokenApi = async () => {
-    await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/auth/refresh`,
-        {},
-        { withCredentials: true }
-    );
+    await refreshTokenRequest();
 };
 
 export const getMeApi = async () => {
