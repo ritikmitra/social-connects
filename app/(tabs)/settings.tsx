@@ -165,6 +165,7 @@ export default function SettingsScreen() {
     '#34C759',
     '#AF52DE',
     '#FF9500',
+    '#ff57c4',
   ];
 
   const handleLogout = async () => {

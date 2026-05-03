@@ -92,7 +92,7 @@ export default function ChatScreen() {
         [messages, conversationId]
     );
 
-    const startOutgoingCall = useCallback((isVideo = true) => {
+    const startOutgoingCall = useCallback((isVideo = false) => {
         const callId = `call_${Date.now()}_${currentUserId}_${receiverId}`;
         if (!socket) return;
         socket.emit("initiate_call", {
@@ -584,7 +584,7 @@ export default function ChatScreen() {
                     />
                 </Pressable>
 
-                <View style={styles.headerAvatar}>
+                <View style={[styles.headerAvatar, { backgroundColor: accentColor }]}>
                     <Text style={styles.headerAvatarText}>{initials}</Text>
                 </View>
 
@@ -605,9 +605,9 @@ export default function ChatScreen() {
                         Chat
                     </Text>
                 </View>
-                {/* call button */}
+                {/* call button (audio-only by default) */}
                 <Pressable
-                    onPress={() => startOutgoingCall(true)}
+                    onPress={() => startOutgoingCall(false)}
                     style={styles.headerBackButton}
                     hitSlop={10}
                 >
@@ -677,7 +677,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginRight: 10,
-        backgroundColor: "#4C6FFF",
     },
     headerAvatarText: {
         color: "white",
