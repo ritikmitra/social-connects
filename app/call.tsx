@@ -26,6 +26,7 @@ export default function CallScreen() {
     isCallerRef.current ? "calling" : "connecting"
   );
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const displayName = typeof targetName === "string" && targetName.trim().length > 0
     ? targetName
@@ -119,6 +120,27 @@ export default function CallScreen() {
     try { peerRef.current?.close?.(); } catch {}
     peerRef.current = null;
   }, []);
+
+  // Auto-exit call screen on declined/ended (WhatsApp-like).
+  useEffect(() => {
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    exitTimerRef.current = null;
+
+    if (status === "declined" || status === "ended") {
+      exitTimerRef.current = setTimeout(() => {
+        try {
+          router.back();
+        } catch {
+          // ignore
+        }
+      }, 1200);
+    }
+
+    return () => {
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    };
+  }, [status]);
 
   const setSpeaker = useCallback((enabled: boolean) => {
     // NOTE: Actual speakerphone routing requires a native audio-route module.

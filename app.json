@@ -42,7 +42,8 @@
         }
       ],
       "expo-video",
-      "@config-plugins/react-native-webrtc"
+      "@config-plugins/react-native-webrtc",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,
