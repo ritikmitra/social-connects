@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { View, Pressable, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
+import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDescription, MediaStream } from 'react-native-webrtc';
 import { useSocket } from '@/context/socket.context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,6 +20,7 @@ export default function CallScreen() {
   const isCallerRef = useRef(isCaller === "true");
   const localStreamRef = useRef<any>(null);
   const remoteStreamRef = useRef<any>(null);
+  const remoteMixedStreamRef = useRef<any>(null);
   const startedRef = useRef(false);
 
   const [status, setStatus] = useState<"calling" | "connecting" | "in_call" | "declined" | "ended">(
@@ -54,8 +55,23 @@ export default function CallScreen() {
     if (!peerRef.current || !socket) return;
 
     peerRef.current.ontrack = (e: any) => {
-      remoteStreamRef.current = e.streams[0];
-      setRemoteStream(e.streams[0]);
+      // Some rn-webrtc builds (esp. audio-only) may deliver tracks with empty `e.streams`.
+      const streamFromEvent = e?.streams?.[0];
+      if (streamFromEvent) {
+        remoteStreamRef.current = streamFromEvent;
+        setRemoteStream(streamFromEvent);
+      } else if (e?.track) {
+        if (!remoteMixedStreamRef.current) {
+          remoteMixedStreamRef.current = new MediaStream();
+        }
+        try {
+          remoteMixedStreamRef.current.addTrack(e.track);
+        } catch {
+          // ignore
+        }
+        remoteStreamRef.current = remoteMixedStreamRef.current;
+        setRemoteStream(remoteMixedStreamRef.current);
+      }
       setStatus("in_call");
     };
 
@@ -152,7 +168,8 @@ export default function CallScreen() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleOffer = async ({ offer }: any) => {
+    const handleOffer = async ({ call_id, offer }: any) => {
+      if (call_id && call_id !== callId) return;
       const stream = await getMedia(isVideo === "true");
       const pc = new RTCPeerConnection(config);
       peerRef.current = pc;
@@ -166,13 +183,15 @@ export default function CallScreen() {
       socket.emit("answer", { call_id: callId, target_user_id: targetUserId, answer });
     };
 
-    const handleAnswer = async ({ answer }: any) => {
+    const handleAnswer = async ({ call_id, answer }: any) => {
+      if (call_id && call_id !== callId) return;
       if (!peerRef.current) return;
       await peerRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       setStatus("in_call");
     };
 
-    const handleIceCandidate = async ({ candidate }: any) => {
+    const handleIceCandidate = async ({ call_id, candidate }: any) => {
+      if (call_id && call_id !== callId) return;
       if (peerRef.current) await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     };
 
@@ -192,6 +211,14 @@ export default function CallScreen() {
       cleanup();
     };
 
+    const handleAccepted = (payload?: any) => {
+      const acceptedCallId = payload?.call_id ?? payload?.callId ?? payload?.id;
+      if (acceptedCallId && acceptedCallId !== callId) return;
+      if (!isCallerRef.current) return;
+      setStatus("connecting");
+      startCall();
+    };
+
     socket.on("offer", handleOffer);
     socket.on("answer", handleAnswer);
     socket.on("ice_candidate", handleIceCandidate);
@@ -201,8 +228,11 @@ export default function CallScreen() {
     socket.on("rejected_call", handleRejected);
     socket.on("call_ended", handleEnded);
     socket.on("end_call", handleEnded);
+    socket.on("call_accepted", handleAccepted);
 
-    if (isCallerRef.current) startCall();
+    // IMPORTANT: only send offer after receiver accepts,
+    // otherwise the receiver can miss the "offer" event while not on this screen.
+    if (!isCallerRef.current) setStatus("connecting");
 
     return () => {
       socket.off("offer");
@@ -213,6 +243,7 @@ export default function CallScreen() {
       socket.off("rejected_call", handleRejected);
       socket.off("call_ended", handleEnded);
       socket.off("end_call", handleEnded);
+      socket.off("call_accepted", handleAccepted);
       cleanup();
     };
   }, [socket, acceptCall, attachPeerHandlers, callId, targetUserId, isVideo, startCall, cleanup, getMedia]);
