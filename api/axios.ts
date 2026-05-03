@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getAuthState } from "@/store/";
-import { refreshTokenApi } from "@/services/auth.service";
+import { refreshTokenRequest } from "@/api/auth";
 import { router } from "expo-router";
 
 const axiosInstance = axios.create({
@@ -23,7 +23,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        await refreshTokenApi();
+        await refreshTokenRequest();
         console.log('refreshed token');
         return axiosInstance(originalRequest);
       } catch (refreshError) {
