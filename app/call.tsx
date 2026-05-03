@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Pressable } from 'react-native';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { View, Pressable, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { RTCPeerConnection, RTCView, mediaDevices, RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
 import { useSocket } from '@/context/socket.context';
@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 export default function CallScreen() {
-  const { callId, targetUserId, isVideo, isCaller } = useLocalSearchParams();
+  const { callId, targetUserId, targetName, isVideo, isCaller } = useLocalSearchParams();
   const { socket } = useSocket();
 
   const [localStream, setLocalStream] = useState<any>(null);
@@ -21,6 +21,22 @@ export default function CallScreen() {
   const localStreamRef = useRef<any>(null);
   const remoteStreamRef = useRef<any>(null);
   const startedRef = useRef(false);
+
+  const [status, setStatus] = useState<"calling" | "connecting" | "in_call" | "declined" | "ended">(
+    isCallerRef.current ? "calling" : "connecting"
+  );
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+
+  const displayName = typeof targetName === "string" && targetName.trim().length > 0
+    ? targetName
+    : "Contact";
+
+  const initials = useMemo(() => {
+    const parts = displayName.split(" ").filter(Boolean);
+    const a = parts[0]?.[0] ?? "C";
+    const b = parts[1]?.[0] ?? "";
+    return `${a}${b}`.toUpperCase();
+  }, [displayName]);
 
   // Get local media
   const getMedia = useCallback(async (video: boolean) => {
@@ -39,6 +55,13 @@ export default function CallScreen() {
     peerRef.current.ontrack = (e: any) => {
       remoteStreamRef.current = e.streams[0];
       setRemoteStream(e.streams[0]);
+      setStatus("in_call");
+    };
+
+    peerRef.current.onconnectionstatechange = () => {
+      const s = peerRef.current?.connectionState;
+      if (s === "connected") setStatus("in_call");
+      else if (s === "connecting") setStatus("connecting");
     };
     peerRef.current.onicecandidate = (e: any) => {
       if (!e.candidate) return;
@@ -55,6 +78,7 @@ export default function CallScreen() {
     if (!socket) return;
     if (startedRef.current) return;
     startedRef.current = true;
+    setStatus("connecting");
 
     const stream = await getMedia(isVideo === "true");
     const pc = new RTCPeerConnection(config);
@@ -77,6 +101,7 @@ export default function CallScreen() {
   const acceptCall = useCallback(() => {
     if (!socket) return;
     isCallerRef.current = false;
+    setStatus("connecting");
     socket.emit("accept_call", { call_id: callId, target_user_id: targetUserId });
   }, [socket, callId, targetUserId]);
 
@@ -93,6 +118,12 @@ export default function CallScreen() {
 
     try { peerRef.current?.close?.(); } catch {}
     peerRef.current = null;
+  }, []);
+
+  const setSpeaker = useCallback((enabled: boolean) => {
+    // NOTE: Actual speakerphone routing requires a native audio-route module.
+    // We keep the UI toggle now; wiring can be added once such a module is present.
+    setIsSpeakerOn(enabled);
   }, []);
 
   // Handle signaling
@@ -114,16 +145,40 @@ export default function CallScreen() {
     };
 
     const handleAnswer = async ({ answer }: any) => {
+      if (!peerRef.current) return;
       await peerRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+      setStatus("in_call");
     };
 
     const handleIceCandidate = async ({ candidate }: any) => {
       if (peerRef.current) await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
     };
 
+    const handleRejected = (payload?: any) => {
+      const rejectedCallId = payload?.call_id ?? payload?.callId ?? payload?.id;
+      // If server sends an id, only react to this call.
+      if (rejectedCallId && rejectedCallId !== callId) return;
+
+      if (isCallerRef.current) {
+        setStatus("declined");
+        cleanup();
+      }
+    };
+
+    const handleEnded = () => {
+      setStatus("ended");
+      cleanup();
+    };
+
     socket.on("offer", handleOffer);
     socket.on("answer", handleAnswer);
     socket.on("ice_candidate", handleIceCandidate);
+    // Common server event names (support multiple).
+    socket.on("call_rejected", handleRejected);
+    socket.on("call_declined", handleRejected);
+    socket.on("rejected_call", handleRejected);
+    socket.on("call_ended", handleEnded);
+    socket.on("end_call", handleEnded);
 
     if (isCallerRef.current) startCall();
 
@@ -131,6 +186,11 @@ export default function CallScreen() {
       socket.off("offer");
       socket.off("answer");
       socket.off("ice_candidate");
+      socket.off("call_rejected", handleRejected);
+      socket.off("call_declined", handleRejected);
+      socket.off("rejected_call", handleRejected);
+      socket.off("call_ended", handleEnded);
+      socket.off("end_call", handleEnded);
       cleanup();
     };
   }, [socket, acceptCall, attachPeerHandlers, callId, targetUserId, isVideo, startCall, cleanup, getMedia]);
@@ -155,7 +215,7 @@ export default function CallScreen() {
 
   const endCall = () => {
     if (!socket) return;
-    socket.emit("end_call", { call_id: callId });
+    socket.emit("end_call", { call_id: callId, target_user_id: targetUserId });
     cleanup();
     router.back();
   };
@@ -172,31 +232,163 @@ export default function CallScreen() {
   const showLocalVideo = localStream && isVideoEnabled && hasVideoTrack(localStream);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000' }}>
+    <View style={styles.container}>
       {showRemoteVideo && (
-        <RTCView streamURL={remoteStream.toURL()} style={{ flex: 1 }} objectFit="cover" />
+        <RTCView streamURL={remoteStream.toURL()} style={styles.remoteVideo} objectFit="cover" />
       )}
 
       {showLocalVideo && (
         <RTCView 
           streamURL={localStream.toURL()} 
-          style={{ position: 'absolute', bottom: 100, right: 20, width: 120, height: 160, borderRadius: 12 }} 
+          style={styles.localVideo}
         />
       )}
 
-      <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-around' }}>
-        <Pressable onPress={toggleMute}>
-          <Ionicons name={isMuted ? "mic-off" : "mic"} size={32} color="white" />
+      {/* Audio-call UI (or fallback while video connects) */}
+      {!showRemoteVideo && (
+        <View style={styles.audioStage}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
+          <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+          <Text style={styles.status}>
+            {status === "calling"
+              ? "Calling…"
+              : status === "connecting"
+                ? "Connecting…"
+                : status === "declined"
+                  ? "Declined"
+                  : status === "ended"
+                    ? "Call ended"
+                    : "In call"}
+          </Text>
+          {(status === "declined" || status === "ended") && (
+            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+              <Text style={styles.backBtnText}>Back</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      <View style={styles.controls}>
+        <Pressable onPress={toggleMute} style={styles.controlBtn}>
+          <Ionicons name={isMuted ? "mic-off" : "mic"} size={26} color="white" />
+          <Text style={styles.controlLabel}>{isMuted ? "Unmute" : "Mute"}</Text>
         </Pressable>
-        <Pressable onPress={endCall} style={{ backgroundColor: 'red', padding: 20, borderRadius: 50 }}>
-          <Ionicons name="call" size={32} color="white" />
+
+        <Pressable onPress={endCall} style={[styles.controlBtn, styles.hangupBtn]}>
+          <Ionicons name="call" size={26} color="white" />
+          <Text style={styles.controlLabel}>End</Text>
         </Pressable>
+
+        <Pressable onPress={() => setSpeaker(!isSpeakerOn)} style={styles.controlBtn}>
+          <Ionicons name={isSpeakerOn ? "volume-high" : "volume-medium"} size={26} color="white" />
+          <Text style={styles.controlLabel}>{isSpeakerOn ? "Speaker" : "Earpiece"}</Text>
+        </Pressable>
+
         {isVideo === "true" && (
-          <Pressable onPress={toggleVideo}>
-            <Ionicons name={isVideoEnabled ? "videocam" : "videocam-off"} size={32} color="white" />
+          <Pressable onPress={toggleVideo} style={styles.controlBtn}>
+            <Ionicons name={isVideoEnabled ? "videocam" : "videocam-off"} size={26} color="white" />
+            <Text style={styles.controlLabel}>{isVideoEnabled ? "Video" : "Video off"}</Text>
           </Pressable>
         )}
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#070A12",
+  },
+  remoteVideo: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  localVideo: {
+    position: "absolute",
+    bottom: 120,
+    right: 18,
+    width: 120,
+    height: 160,
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  audioStage: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  avatar: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: "rgba(76,111,255,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  avatarText: {
+    color: "#fff",
+    fontSize: 26,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  name: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  status: {
+    marginTop: 6,
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  backBtn: {
+    marginTop: 16,
+    paddingHorizontal: 18,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  controls: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 26,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    gap: 12,
+  },
+  controlBtn: {
+    width: "48%",
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  hangupBtn: {
+    backgroundColor: "#E5484D",
+  },
+  controlLabel: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+});

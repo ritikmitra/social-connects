@@ -108,11 +108,12 @@ export default function ChatScreen() {
             params: {
                 callId,
                 targetUserId: receiverId,
+                targetName: displayName,
                 isVideo: isVideo.toString(),
                 isCaller: "true"
             }
         });
-    }, [socket, receiverId, currentUserId, user?.first_name]);
+    }, [socket, receiverId, currentUserId, user?.first_name, displayName]);
 
     // ─── Transform messages → GiftedChat IMessage ─────────────────────────────
 

@@ -5,9 +5,12 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeProviderCustom, useAppTheme } from '@/context/ThemeContext';
 import SafeScreen from '@/components/SafeScreen';
 import { SocketProvider, useSocket } from "@/context/socket.context";
-import { useEffect } from "react";
-import { Alert, Platform } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Platform, Vibration } from "react-native";
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import * as Haptics from "expo-haptics";
+import IncomingCallSheet from "@/components/IncomingCallSheet";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 
 Notifications.setNotificationHandler({
@@ -20,46 +23,31 @@ Notifications.setNotificationHandler({
   }),
 });
 
+type IncomingCallPayload = {
+  call_id: string;
+  caller_name?: string;
+  caller_id?: string;
+  from?: string;
+  user_id?: string;
+  is_video?: boolean;
+};
+
 function IncomingCallListener() {
   const { socket } = useSocket();
+  const [incoming, setIncoming] = useState<IncomingCallPayload | null>(null);
+  const ringTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const callerName = incoming?.caller_name ?? "Someone";
+  const callerId = incoming?.caller_id ?? incoming?.from ?? incoming?.user_id ?? "";
+  const isVideo = !!incoming?.is_video;
+  const callId = incoming?.call_id ?? "";
 
   useEffect(() => {
     if (!socket) return;
 
-    const handleIncomingCall = (data: any) => {
-      const callId = data?.call_id;
-      const callerName = data?.caller_name ?? "Someone";
-      const callerId = data?.caller_id ?? data?.from ?? data?.user_id ?? "";
-      const isVideo = !!data?.is_video;
-
-      if (!callId) return;
-
-      Alert.alert("Incoming Call", `${callerName} is calling...`, [
-        {
-          text: "Reject",
-          style: "destructive",
-          onPress: () => socket.emit("reject_call", { call_id: callId }),
-        },
-        {
-          text: "Accept",
-          onPress: () => {
-            socket.emit("accept_call", {
-              call_id: callId,
-              target_user_id: callerId,
-            });
-
-            router.push({
-              pathname: "/call",
-              params: {
-                callId,
-                targetUserId: callerId,
-                isVideo: isVideo.toString(),
-                isCaller: "false",
-              },
-            });
-          },
-        },
-      ]);
+    const handleIncomingCall = (data: IncomingCallPayload) => {
+      if (!data?.call_id) return;
+      setIncoming(data);
     };
 
     socket.on("incoming_call", handleIncomingCall);
@@ -68,7 +56,61 @@ function IncomingCallListener() {
     };
   }, [socket]);
 
-  return null;
+  // Start/stop ringing while sheet is visible.
+  useEffect(() => {
+    if (!incoming) {
+      if (ringTimerRef.current) clearInterval(ringTimerRef.current);
+      ringTimerRef.current = null;
+      try { Vibration.cancel(); } catch {}
+      return;
+    }
+
+    // Vibrate in a loop. (Android: pattern loops; iOS: best-effort fallback)
+    try { Vibration.vibrate([0, 900, 700], true); } catch {}
+
+    // Add a light repeated haptic pulse (helps on devices where vibration loop is limited).
+    ringTimerRef.current = setInterval(() => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    }, 1600);
+
+    return () => {
+      if (ringTimerRef.current) clearInterval(ringTimerRef.current);
+      ringTimerRef.current = null;
+      try { Vibration.cancel(); } catch {}
+    };
+  }, [incoming]);
+
+  if (!incoming) return null;
+
+  const onReject = () => {
+    socket?.emit("reject_call", { call_id: callId, target_user_id: callerId });
+    setIncoming(null);
+  };
+
+  const onAccept = () => {
+    socket?.emit("accept_call", { call_id: callId, target_user_id: callerId });
+    setIncoming(null);
+    router.push({
+      pathname: "/call",
+      params: {
+        callId,
+        targetUserId: callerId,
+        targetName: callerName,
+        isVideo: isVideo.toString(),
+        isCaller: "false",
+      },
+    });
+  };
+
+  return (
+    <IncomingCallSheet
+      visible={!!incoming}
+      callerName={callerName}
+      isVideo={isVideo}
+      onAccept={onAccept}
+      onReject={onReject}
+    />
+  );
 }
 
 function RootNavigator() {
@@ -104,12 +146,14 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <SocketProvider>
-      <KeyboardProvider>
-        <ThemeProviderCustom>
-          <RootNavigator />
-        </ThemeProviderCustom>
-      </KeyboardProvider>
-    </SocketProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SocketProvider>
+        <KeyboardProvider>
+          <ThemeProviderCustom>
+            <RootNavigator />
+          </ThemeProviderCustom>
+        </KeyboardProvider>
+      </SocketProvider>
+    </GestureHandlerRootView>
   );
 }
