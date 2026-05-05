@@ -17,7 +17,7 @@ export default function Index() {
   useEffect(() => {
     const init = async () => {
       try {
-        // 1️⃣ Validate session using cookies
+        // 1️ Validate session using cookies
         const me = await getMeApi();
 
         if (me) {
@@ -27,7 +27,7 @@ export default function Index() {
         }
       } catch {}
 
-      // 2️⃣ Fallback logic
+      // 2️ Fallback logic
       const hasSeenSplash = await storage.getHasSeenSplash();
 
       if (hasSeenSplash) {
